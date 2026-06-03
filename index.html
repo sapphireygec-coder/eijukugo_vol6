@@ -1,524 +1,245 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Broome's One Day War</title>
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { background:#1a1a1a; color:#e0e0e0; font-family:'Georgia',serif; line-height:1.8; }
-.container { max-width:1400px; margin:0 auto; padding:20px; }
-header { text-align:center; padding:40px 0; border-bottom:2px solid #444; margin-bottom:30px; }
-/* BGMプレーヤー */
-#bgm-bar { position:fixed; bottom:0; left:0; right:0; background:#111; border-top:2px solid #FF6B35; padding:10px 20px; display:flex; align-items:center; gap:14px; z-index:9999; }
-#bgm-bar iframe { display:none; }
-#bgm-status { color:#aaa; font-size:0.85em; flex:1; }
-#bgm-timer  { color:#FFC107; font-size:0.85em; font-family:monospace; min-width:55px; text-align:right; }
-.bgm-btn { background:#FF6B35; color:#fff; border:none; padding:7px 14px; border-radius:5px; cursor:pointer; font-size:13px; white-space:nowrap; }
-.bgm-btn:hover { background:#ff8555; }
-.bgm-btn.muted { background:#555; }
-body { padding-bottom:60px; }
-h1 { color:#FF6B35; font-size:2.2em; margin-bottom:10px; letter-spacing:0.05em; }
-.subtitle-jp { color:#fff; font-size:1.35em; font-weight:bold; font-style:italic; letter-spacing:0.12em; margin-bottom:10px; font-family:'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif; }
-.orange-line { width:180px; height:3px; background:#FF6B35; margin:10px auto 12px; border-radius:2px; }
-.subtitle { color:#999; font-size:1.05em; letter-spacing:0.04em; }
-footer { text-align:center; margin-top:50px; padding:28px 20px; border-top:1px solid #444; color:#888; font-size:0.85em; line-height:1.9; }
-footer .copy { color:#aaa; font-size:0.92em; margin-bottom:6px; }
-footer .credit { color:#777; font-size:0.83em; max-width:700px; margin:0 auto; }
-
-/* ── 3段トグルボタン ── */
-.mode-toggle { display:inline-flex; border-radius:6px; overflow:hidden; border:1px solid #555; margin-right:8px; }
-.mode-toggle button {
-  background:#2a2a2a; color:#aaa; border:none; padding:6px 13px;
-  font-size:13px; cursor:pointer; transition:background 0.2s,color 0.2s;
-  border-right:1px solid #555;
-}
-.mode-toggle button:last-child { border-right:none; }
-.mode-toggle button.active-en  { background:#1E88E5; color:#fff; }
-.mode-toggle button.active-jp  { background:#FFC107; color:#111; }
-.mode-toggle button.active-col { background:#FF6B35; color:#fff; }
-
-.content-area { display:grid; grid-template-columns:1fr 380px; gap:30px; }
-.text-panel { background:#252525; padding:25px; border-radius:10px; }
-.notes-panel { background:#2a2a2a; padding:25px; border-radius:10px; position:sticky; top:20px; height:fit-content; max-height:90vh; overflow-y:auto; }
-.notes-panel h3 { color:#FFC107; margin-bottom:15px; font-size:1.2em; }
-.note-item { margin-bottom:15px; padding:12px; background:#333; border-radius:8px; border-left:4px solid #1E88E5; }
-.note-word { color:#FFC107; font-weight:bold; font-size:1em; display:block; margin-bottom:6px; }
-.note-explanation { color:#ccc; font-size:0.9em; line-height:1.6; }
-
-.paragraph { margin-bottom:35px; }
-.para-header { display:flex; align-items:center; margin-bottom:12px; gap:10px; flex-wrap:wrap; }
-.para-number { background:#FF6B35; color:#fff; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; flex-shrink:0; }
-.audio-btn { background:#1E88E5; color:#fff; border:none; padding:7px 14px; border-radius:5px; cursor:pointer; font-size:18px; transition:background 0.3s; -webkit-tap-highlight-color:transparent; }
-.audio-btn:hover { background:#1565c0; }
-.audio-btn.playing { background:#43A047; }
-.audio-btn.error { background:#f44336; }
-.sfx-btn { background:#6A1B9A; color:#fff; border:none; padding:5px 10px; border-radius:5px; cursor:pointer; font-size:12px; -webkit-tap-highlight-color:transparent; }
-.sfx-btn:hover { background:#8E24AA; }
-.audio-status { font-size:0.85em; color:#999; }
-
-/* ── テキスト本体 ── */
-.text-content { font-size:1.05em; line-height:2; }
-/* カラーモード */
-.text-content.colored .s   { color:#FF6B35; font-weight:bold; }
-.text-content.colored .v   { color:#1E88E5; font-weight:bold; }
-.text-content.colored .o   { color:#FFC107; font-weight:bold; }
-.text-content.colored .c   { color:#43A047; font-weight:bold; }
-.text-content.colored .adv { color:#B39DDB; }
-.text-content.colored .adj { color:#FFC0CB; }
-.text-content.colored .prep{ color:#999; font-style:italic; }
-
-/* 日本語訳 */
-.jp-translation {
-  display:none;
-  margin-top:10px;
-  padding:10px 14px;
-  font-size:0.88em;
-  color:#888;
-  line-height:1.9;
-  font-family:'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif;
-  border-left:3px solid #444;
-}
-.jp-translation.visible { display:block; }
-
-.vocab-word { position:relative; cursor:help; border-bottom:2px dotted #FFC107; }
-.vocab-word:hover { color:#FFC107; }
-.tooltip { display:none; position:absolute; bottom:100%; left:50%; transform:translateX(-50%); background:#333; color:#fff; padding:10px 15px; border-radius:8px; font-size:0.85em; width:230px; z-index:1000; box-shadow:0 4px 12px rgba(0,0,0,0.5); margin-bottom:8px; border:2px solid #FFC107; }
-.vocab-word:hover .tooltip { display:block; }
-.tooltip::after { content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:8px solid transparent; border-top-color:#FFC107; }
-
-.map-container { margin:20px 0; border-radius:10px; overflow:hidden; border:2px solid #444; }
-.map-title { background:#333; padding:10px 15px; font-size:0.95em; color:#FFC107; border-bottom:1px solid #444; }
-.map-svg-wrap { background:#0a1628; width:100%; }
-.map-svg-wrap svg { width:100%; height:auto; display:block; }
-.photo-frame { margin:15px 0; border-radius:8px; overflow:hidden; border:2px solid #444; }
-.photo-caption { background:#333; padding:8px 12px; font-size:0.85em; color:#aaa; text-align:center; }
-@media(max-width:1100px){ .content-area{grid-template-columns:1fr;} .notes-panel{position:static;max-height:none;} }
-</style>
+<title>英熟語 Flashcard Vol.6 — 前置詞・熟語89選</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0f14;--bg2:#141720;--bg3:#1c2030;--bg4:#242840;--accent:#3b82f6;--accent2:#60a5fa;--accent3:#1d4ed8;--ok:#22c55e;--ng:#ef4444;--warn:#f59e0b;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--border:#2d3748;--border2:#374151;--A:#3b82f6;--B:#22c55e;--C:#a855f7;--D:#f59e0b;--font:'Times New Roman','Noto Serif JP',Georgia,serif;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
+.pbar{height:3px;background:var(--bg3);position:fixed;top:0;left:0;right:0;z-index:20}.pfill{height:100%;background:var(--accent);transition:width .35s ease}
+#hdr{background:var(--bg2);border-bottom:1px solid var(--border);padding:9px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:3px;z-index:10}
+.hl{display:flex;align-items:center;gap:10px}
+.badge{background:var(--accent3);color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:4px;letter-spacing:.5px;font-family:sans-serif}
+.htitle{font-size:14px;font-weight:700;color:var(--text)}
+.hr{display:flex;align-items:center;gap:18px}
+.scbox{display:flex;gap:14px;align-items:center;font-size:13px;font-family:sans-serif}
+.sc-ok{color:var(--ok);font-weight:700}.sc-ng{color:var(--ng);font-weight:700}.sc-lbl{color:var(--text3)}.sc-pos{color:var(--text2);font-weight:600}
+.timer{font-size:14px;color:var(--text2);font-family:'Courier New',monospace;min-width:52px;text-align:right}
+#tabs{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;padding:0 16px;overflow-x:auto}
+.tab{padding:10px 15px;font-size:13px;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;color:var(--text3);transition:.2s;white-space:nowrap;flex-shrink:0;font-family:sans-serif}
+.tab.active.A{border-color:var(--A);color:var(--A)}.tab.active.B{border-color:var(--B);color:var(--B)}.tab.active.C{border-color:var(--C);color:var(--C)}.tab.active.D{border-color:var(--D);color:var(--D)}
+#main{padding:20px 16px;max-width:720px;margin:0 auto}
+.qcard{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px}
+.qmeta{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.qnum-badge{font-size:11px;font-weight:700;padding:3px 11px;border-radius:20px;border:1px solid;font-family:sans-serif}
+.qnum-badge.A{color:var(--A);border-color:var(--A);background:rgba(59,130,246,.1)}.qnum-badge.B{color:var(--B);border-color:var(--B);background:rgba(34,197,94,.1)}.qnum-badge.C{color:var(--C);border-color:var(--C);background:rgba(168,85,247,.1)}.qnum-badge.D{color:var(--D);border-color:var(--D);background:rgba(245,158,11,.1)}
+.qtype-lbl{font-size:11px;color:var(--text3);font-family:sans-serif}
+.qtext{font-size:17px;line-height:1.9;color:var(--text);white-space:pre-line;margin-bottom:2px}
+.qtext-jp{font-size:16px;line-height:1.8;color:var(--text);font-weight:500;margin-bottom:6px}
+.qtext-en{font-size:16px;line-height:2.1;color:var(--text2);font-style:italic}
+.qtext-inst{font-size:13px;color:var(--text3);margin-top:6px;font-family:sans-serif;font-style:normal}
+.qtext-guide{font-size:13px;color:var(--text3);margin-top:8px;padding:7px 10px;background:var(--bg3);border-radius:6px;border-left:3px solid var(--text3);font-family:sans-serif}
+.blank{display:inline-block;min-width:100px;border-bottom:2px solid var(--accent);color:var(--accent2);font-weight:700;text-align:center;padding:0 8px;vertical-align:bottom;line-height:1.8;margin:0 2px}
+.abtn{display:inline-flex;align-items:center;gap:6px;background:none;border:1px solid var(--border2);color:var(--accent2);padding:5px 13px;border-radius:6px;font-size:12px;cursor:pointer;margin-top:10px;transition:.2s;font-family:sans-serif}
+.abtn:hover{background:var(--bg3);border-color:var(--accent)}.abtn svg{width:13px;height:13px;fill:currentColor}
+.choices{display:flex;flex-direction:column;gap:9px;margin-top:18px}
+.cbtn{background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:12px 15px;border-radius:9px;font-size:15px;text-align:left;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:11px;line-height:1.5;font-family:var(--font)}
+.cbtn:hover:not(:disabled){background:var(--bg4);border-color:var(--accent)}.cbtn .lbl{font-size:11px;color:var(--text3);font-weight:700;min-width:20px;flex-shrink:0;font-family:sans-serif}
+.cbtn.ok{background:rgba(34,197,94,.12);border-color:var(--ok);color:var(--ok)}.cbtn.ng{background:rgba(239,68,68,.12);border-color:var(--ng);color:var(--ng)}.cbtn:disabled{cursor:default}
+.iarea{margin-top:16px}
+.qtimer-wrap{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.qtimer-bar-bg{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.qtimer-bar{height:100%;background:var(--accent);border-radius:3px;transition:width .9s linear}
+.qtimer-bar.warn{background:var(--warn)}.qtimer-bar.danger{background:var(--ng)}
+.qtimer-num{font-size:13px;font-weight:700;color:var(--text2);min-width:28px;text-align:right;font-family:'Courier New',monospace}
+.qtimer-num.warn{color:var(--warn)}.qtimer-num.danger{color:var(--ng)}
+.irow{display:flex;gap:9px;align-items:stretch}
+.tinput{flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:10px 14px;border-radius:9px;font-size:15px;font-family:var(--font);outline:none;transition:.2s}
+.tinput:focus{border-color:var(--accent);background:var(--bg4)}.tinput.ok{border-color:var(--ok);background:rgba(34,197,94,.08);color:var(--ok)}.tinput.ng{border-color:var(--ng);background:rgba(239,68,68,.08);color:var(--ng)}
+.sbtn{background:var(--accent3);border:none;color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;white-space:nowrap;font-family:sans-serif}
+.sbtn:hover{background:var(--accent)}.sbtn:disabled{opacity:.4;cursor:default}
+.hbtn{background:none;border:none;color:var(--warn);font-size:12px;cursor:pointer;padding:5px 0;margin-top:4px;display:none;font-family:sans-serif}
+.hbox{font-size:12px;color:var(--warn);margin-top:5px;padding:6px 10px;background:rgba(245,158,11,.08);border-radius:6px;border:1px solid rgba(245,158,11,.25);display:none;font-family:sans-serif}
+.fb{border-radius:9px;padding:14px 16px;margin-top:14px;display:none;line-height:1.7}.fb.ok{background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.25)}.fb.ng{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25)}
+.fb-tabs{display:flex;margin-bottom:10px;border-bottom:1px solid var(--border2)}
+.fbtab{padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;border-bottom:2px solid transparent;color:var(--text3);transition:.15s;font-family:sans-serif}.fbtab.active{border-color:var(--accent2);color:var(--accent2)}
+.fbc{display:none}.fbc.show{display:block}
+.fb-ans-row{font-size:14px;margin-bottom:7px;font-family:sans-serif}.fb-ans{color:var(--accent2);font-weight:700;font-family:var(--font)}.fb-note{font-size:13px;color:var(--text2);line-height:1.75;font-family:sans-serif}.fb-jp{font-size:13px;color:var(--text);line-height:1.8;padding:8px 0;font-family:sans-serif}
+.nxtbtn{display:none;width:100%;margin-top:14px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:12px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;text-align:right;font-family:sans-serif}.nxtbtn:hover{background:var(--bg4);border-color:var(--accent)}
+.scard{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:36px 24px;text-align:center}
+.s-grade{font-size:42px;font-weight:700;letter-spacing:2px;margin-bottom:4px}
+.s-comment{font-size:15px;margin-bottom:20px;font-family:sans-serif}
+.sbig{font-size:68px;font-weight:700;color:var(--accent2);line-height:1}
+.slbl{font-size:15px;color:var(--text2);margin-top:8px;margin-bottom:28px;font-family:sans-serif}
+.ssecs{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:28px}.ssec{border-radius:9px;padding:15px;text-align:center}
+.ssec.A{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3)}.ssec.B{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3)}.ssec.C{background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.3)}.ssec.D{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3)}
+.sn{font-size:11px;font-weight:700;line-height:1.4;font-family:sans-serif}.ssec.A .sn{color:var(--A)}.ssec.B .sn{color:var(--B)}.ssec.C .sn{color:var(--C)}.ssec.D .sn{color:var(--D)}
+.sv{font-size:26px;font-weight:700;margin-top:5px}.ssec.A .sv{color:var(--A)}.ssec.B .sv{color:var(--B)}.ssec.C .sv{color:var(--C)}.ssec.D .sv{color:var(--D)}
+.rbtn{width:100%;padding:13px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;border:none;margin-top:10px;transition:.2s;font-family:sans-serif}.rbtn.p{background:var(--accent3);color:#fff}.rbtn.p:hover{background:var(--accent)}.rbtn.s{background:var(--bg3);color:var(--text);border:1px solid var(--border2)}.rbtn.s:hover{background:var(--bg4)}
+@media(max-width:480px){.qtext,.qtext-jp,.qtext-en{font-size:15px}.htitle{font-size:12px}.tab{padding:9px 11px;font-size:12px}.blank{min-width:76px}}</style>
 </head>
 <body>
-<div class="container">
-<header>
-  <h1>BROOME'S ONE DAY WAR</h1>
-  <p class="subtitle-jp">もう一つの真珠湾物語</p>
-  <div class="orange-line"></div>
-  <p class="subtitle">INTRODUCTION — Interactive Learning Edition</p>
-</header>
-
-<div class="content-area">
-<div class="text-panel">
-
-<!-- ===== PARAGRAPH 1 ===== -->
-<div class="paragraph">
-  <div class="para-header">
-    <div class="para-number">1</div>
-    <div class="mode-toggle" id="toggle-1">
-      <button class="active-en" onclick="setMode(1,'en')">🔵 EN</button>
-      <button onclick="setMode(1,'jp')">🟡 JP</button>
-      <button onclick="setMode(1,'col')">🔴 Color</button>
+<div class="pbar"><div class="pfill" id="pf"></div></div>
+<div id="hdr">
+  <div class="hl"><span class="badge">Vol.6</span><span class="htitle">英熟語 Flashcard — 前置詞・熟語89選</span></div>
+  <div class="hr">
+    <div class="scbox">
+      <span><span class="sc-ok" id="sc-ok">0</span><span class="sc-lbl"> 正解</span></span>
+      <span><span class="sc-ng" id="sc-ng">0</span><span class="sc-lbl"> 不正解</span></span>
+      <span class="sc-pos" id="sc-pos">1/20問</span>
     </div>
-    <button class="audio-btn" id="btn-1" onclick="handleNarration(1)">🔊</button>
-
-    <span class="audio-status" id="status-1"></span>
-  </div>
-  <div class="text-content plain" id="para1">
-    <span class="s">Broome</span> <span class="adv">in 1942</span>, <span class="v">was</span> <span class="c">a <span class="adj">small</span> town</span> <span class="prep">on</span> <span class="c">the <span class="adj">tropical</span> <span class="adj">northern</span> coast</span> <span class="prep">of</span> <span class="c">Western Australia</span>, <span class="vocab-word">renowned<span class="tooltip">famous and respected（英検準2級）<br>有名で評判が良い</span></span> <span class="prep">for</span> <span class="o">the quality of its pearls and pearl shell</span>, but <span class="adj">little</span> else. <span class="prep">On</span> <span class="adv">Tuesday 3 March 1942</span>, <span class="s">the <span class="vocab-word">tranquillity<span class="tooltip">peaceful quietness（英検2級）<br>静けさ、平穏</span></span></span> <span class="prep">of</span> <span class="s">this <span class="adj">sleepy</span> <span class="adj">little</span> town</span> <span class="v">was shattered</span> <span class="adv">forever</span>, <span class="adv">when <span class="s">Japanese Zero fighters</span> <span class="v">attacked</span> <span class="o">targets</span> <span class="prep">on</span> <span class="o">the Broome airstrip and <span class="vocab-word">adjacent<span class="tooltip">next to or adjoining（英検準2級）<br>隣接した</span></span> Roebuck Bay</span></span>, and <span class="s">the town</span> <span class="adv">suddenly</span> <span class="v">became</span> <span class="c">"Western Australia's Pearl Harbour"</span>.
-  </div>
-  <div class="jp-translation" id="jp1">
-    1942年当時、ブルームはオーストラリア西部の熱帯の北岸に位置する小さな町で、真珠と真珠貝の品質で名高かったが、それ以外には特に知られていなかった。1942年3月3日（火曜日）、日本軍のゼロ戦がブルームの飛行場と隣接するロバック湾の標的を攻撃し、この眠れる小さな町の静寂は永遠に打ち砕かれた。そして町は突然「西オーストラリアの真珠湾」と呼ばれることになった。
-  </div>
-  <div class="map-container" style="margin-top:18px;">
-    <div class="map-title">🗺 Map 1 — Broome in 1942: Western Australia's "Pearl Harbour"</div>
-    <img src="data:image/jpeg;base64,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" id="map1-img" style="width:100%;display:block;border-radius:0;" alt="Broome 1942 Attack Map">
-  </div>
-  <div class="photo-frame">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Broome_WA_-_Cable_Beach_%281%29.jpg/800px-Broome_WA_-_Cable_Beach_%281%29.jpg" style="width:100%;display:block;" alt="Broome, Western Australia" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-    <div style="display:none;background:#1e1e1e;padding:60px 20px;text-align:center;color:#666;">📷 [Photo: Broome's tropical coastline]</div>
-    <div class="photo-caption">Broome's tropical coastline — a sleepy pearling town before the war</div>
+    <div class="timer" id="tmr">0:00</div>
   </div>
 </div>
-
-<!-- ===== PARAGRAPH 2 ===== -->
-<div class="paragraph">
-  <div class="para-header">
-    <div class="para-number">2</div>
-    <div class="mode-toggle" id="toggle-2">
-      <button class="active-en" onclick="setMode(2,'en')">🔵 EN</button>
-      <button onclick="setMode(2,'jp')">🟡 JP</button>
-      <button onclick="setMode(2,'col')">🔴 Color</button>
-    </div>
-    <button class="audio-btn" id="btn-2" onclick="handleNarration(2)">🔊</button>
-
-    <span class="audio-status" id="status-2"></span>
-  </div>
-  <div class="text-content plain" id="para2">
-    <span class="s">The <span class="adj">first</span> <span class="adj">few</span> months</span> <span class="prep">of</span> <span class="s">1942</span> <span class="v">were</span> <span class="c"><span class="vocab-word">catastrophic<span class="tooltip">disastrous（英検準1級）<br>壊滅的な</span></span></span> <span class="prep">for</span> <span class="c">the Allies</span>, <span class="adv">as <span class="s">Japanese troops</span> <span class="v">were advancing</span> <span class="prep">on</span> <span class="adv">all fronts</span> <span class="prep">in</span> <span class="adv">the Asian-Pacific <span class="vocab-word">theatre<span class="tooltip">area of military operations（英検2級）<br>戦域</span></span> of war</span></span>, and <span class="adv">to many</span> <span class="s">it</span> <span class="v">seemed</span> <span class="adv">just</span> <span class="c">a matter of time</span> <span class="adv">before <span class="s">an <span class="adj">all out</span> attack</span> <span class="prep">on</span> <span class="s">Australia</span> <span class="v">would be launched</span></span>. (Fortunately, the Battle of the Coral Sea, in April, <span class="vocab-word">put paid to<span class="tooltip">ended or destroyed（熟語）<br>~に終止符を打つ</span></span> the Japanese plans for the invasion of Australia).
-  </div>
-  <div class="jp-translation" id="jp2">
-    1942年の最初の数ヶ月は、連合国にとって壊滅的なものだった。日本軍がアジア太平洋の戦域において全戦線で進撃を続けており、多くの人々にとって、オーストラリアへの全面攻撃は時間の問題のように思われていた。（幸いなことに、4月のサンゴ海海戦が、日本軍のオーストラリア侵攻計画に終止符を打つことになる。）
-  </div>
+<div id="tabs">
+  <div class="tab A" id="tab-A">A：4択</div>
+  <div class="tab B" id="tab-B">B：連語補充</div>
+  <div class="tab C" id="tab-C">C：適語補充</div>
+  <div class="tab D" id="tab-D">D：和→英</div>
 </div>
-
-<!-- ===== PARAGRAPH 3 ===== -->
-<div class="paragraph">
-  <div class="para-header">
-    <div class="para-number">3</div>
-    <div class="mode-toggle" id="toggle-3">
-      <button class="active-en" onclick="setMode(3,'en')">🔵 EN</button>
-      <button onclick="setMode(3,'jp')">🟡 JP</button>
-      <button onclick="setMode(3,'col')">🔴 Color</button>
-    </div>
-    <button class="audio-btn" id="btn-3" onclick="handleNarration(3)">🔊</button>
-
-    <span class="audio-status" id="status-3"></span>
-  </div>
-  <div class="text-content plain" id="para3">
-    <span class="adv">In late February 1942</span>, <span class="s">Allied Commanders</span> <span class="v"><span class="vocab-word">anticipated<span class="tooltip">expected or predicted（英検準2級）<br>予測した</span></span></span> <span class="o">that <span class="s">a Japanese attack</span> <span class="v">would be launched</span> <span class="prep">on</span> <span class="o">Java</span> <span class="adv">within a week to 10 days</span></span>, and <span class="adv">therefore</span> <span class="v">issued</span> <span class="o">orders</span> <span class="adv">for <span class="s">all Allied personnel and their <span class="vocab-word">dependants<span class="tooltip">family members who rely on someone（英検2級）<br>扶養家族</span></span></span> <span class="v">to be evacuated</span> <span class="prep">from</span> <span class="adv">the island</span> <span class="prep">to</span> <span class="adv">what <span class="v">was considered</span> <span class="c">to be the safety</span> <span class="prep">of</span> <span class="c">Australia</span></span></span>.
-  </div>
-  <div class="jp-translation" id="jp3">
-    1942年2月下旬、連合軍の司令官たちは、日本軍が1週間から10日以内にジャワ島を攻撃すると予測し、連合軍の全要員とその家族を島から、安全とみなされていたオーストラリアへ避難させるよう命令を発した。
-  </div>
-</div>
-
-<!-- ===== PARAGRAPH 4 ===== -->
-<div class="paragraph">
-  <div class="para-header">
-    <div class="para-number">4</div>
-    <div class="mode-toggle" id="toggle-4">
-      <button class="active-en" onclick="setMode(4,'en')">🔵 EN</button>
-      <button onclick="setMode(4,'jp')">🟡 JP</button>
-      <button onclick="setMode(4,'col')">🔴 Color</button>
-    </div>
-    <button class="audio-btn" id="btn-4" onclick="handleNarration(4)">🔊</button>
-
-    <span class="audio-status" id="status-4"></span>
-  </div>
-  <div class="text-content plain" id="para4">
-    <span class="s">A <span class="adj">vast</span> <span class="adj">aerial</span> shuttle service</span> <span class="v">was undertaken</span> <span class="adv">between Tjilatjap in Java, and other ports to Broome in Western Australia</span> — <span class="s">a distance</span> <span class="prep">of</span> <span class="s"><span class="adv">nearly</span> 1000 km</span> <span class="prep">over</span> <span class="s">the Timor Sea</span> — <span class="adv">using whatever aircraft <span class="v">could be <span class="vocab-word">commandeered<span class="tooltip">officially taken for military use（英検準1級）<br>徴用された</span></span></span> or <span class="v">made</span> <span class="o">to fly</span></span>. <span class="adv">Over a 14 day period from late February to March 3</span>, <span class="s">more than 8,000 refugees</span> <span class="prep">from</span> <span class="s">the then Dutch East Indies (now Indonesia)</span> <span class="v">staged</span> <span class="adv">through Broome</span> <span class="adv"><span class="vocab-word">en-route<span class="tooltip">on the way（英検2級）<br>~への途中で</span></span> to either Perth or Sydney</span>. <span class="adv">On <span class="adj">peak</span> days</span> <span class="s">up to 57 aircraft</span> <span class="v">refuelled</span> <span class="prep">in</span> <span class="adv">the <span class="adj">old</span> pearling town</span>. <span class="s">Lt. John Rouse</span> <span class="v">made</span> <span class="o">the observation</span> <span class="o">that "Broome looks like La Guardia Field at its busiest, the entire aerodrome is covered with planes!"</span>
-  </div>
-  <div class="jp-translation" id="jp4">
-    ジャワ島のチラチャップをはじめとする各港から、西オーストラリアのブルームへ向けて——チモール海を越える約1000kmの距離——大規模な空輸シャトル便が、徴用できる、あるいは飛行可能な航空機を総動員して実施された。2月下旬から3月3日までの14日間で、当時のオランダ領東インド（現インドネシア）から8,000人以上の難民がブルームを経由してパースかシドニーへ向かった。ピーク時には最大57機もの航空機がこの古い真珠採取の町で給油した。ジョン・ラウス中尉はこう記している。「ブルームはラガーディア空港の最も混雑した時間帯のようで、飛行場全体が飛行機で埋め尽くされている！」
-  </div>
-  <div class="map-container" style="margin-top:18px;">
-    <div class="map-title">🗺 Map 2 — The Aerial Evacuation Route: Java → Broome → Perth</div>
-    <div class="map-svg-wrap">
-      <svg viewBox="0 0 760 500" xmlns="http://www.w3.org/2000/svg" font-family="Georgia,serif">
-        <rect width="760" height="500" fill="#0d2137"/>
-        <ellipse cx="210" cy="80" rx="120" ry="30" fill="#6B4E1A" stroke="#a07830" stroke-width="1.5"/>
-        <text x="210" y="76" fill="#FFE082" font-size="16" font-weight="bold" text-anchor="middle">Java</text>
-        <text x="210" y="93" fill="#ccc" font-size="10" text-anchor="middle">(Dutch East Indies / Indonesia)</text>
-        <circle cx="195" cy="100" r="5" fill="#FF6B35" stroke="#fff" stroke-width="1.5"/>
-        <text x="170" y="118" fill="#FF6B35" font-size="12">Tjilatjap</text>
-        <circle cx="250" cy="90" r="4" fill="#FF6B35" stroke="#fff" stroke-width="1.5"/>
-        <text x="258" y="88" fill="#FF6B35" font-size="11">Surabaya</text>
-        <ellipse cx="395" cy="175" rx="55" ry="18" fill="#5a8a30" stroke="#7ab040" stroke-width="1"/>
-        <text x="395" y="179" fill="#d4f0a0" font-size="12" text-anchor="middle">Timor</text>
-        <text x="300" y="200" fill="#4a9fd4" font-size="15" font-style="italic" text-anchor="middle">Timor Sea</text>
-        <polygon points="420,220 480,200 550,205 610,215 660,235 700,270 720,310 710,355 690,390 655,415 610,430 555,440 490,445 430,438 375,420 335,395 310,360 310,320 320,285 345,260 385,240 420,220" fill="#2d5a27" stroke="#5a9e52" stroke-width="1.5"/>
-        <circle cx="355" cy="253" r="9" fill="#FF6B35" stroke="#fff" stroke-width="2.5"/>
-        <text x="368" y="248" fill="#FF6B35" font-size="14" font-weight="bold">Broome</text>
-        <text x="368" y="263" fill="#FF6B35" font-size="10">airstrip / Roebuck Bay</text>
-        <circle cx="320" cy="400" r="7" fill="#FFC107" stroke="#fff" stroke-width="2"/>
-        <text x="333" y="405" fill="#FFC107" font-size="14" font-weight="bold">Perth</text>
-        <circle cx="690" cy="360" r="6" fill="#FFC107" stroke="#fff" stroke-width="1.5"/>
-        <text x="700" y="355" fill="#FFC107" font-size="13">Sydney</text>
-        <circle cx="500" cy="218" r="5" fill="#aaa" stroke="#fff" stroke-width="1"/>
-        <text x="510" y="215" fill="#aaa" font-size="11">Darwin</text>
-        <text x="140" y="370" fill="#4a9fd4" font-size="13" font-style="italic">Indian Ocean</text>
-        <defs>
-          <marker id="arr1" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#FF6B35"/></marker>
-          <marker id="arr2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#FFC107"/></marker>
-        </defs>
-        <path d="M 195,100 Q 270,160 355,253" stroke="#FF6B35" stroke-width="2.5" fill="none" marker-end="url(#arr1)" stroke-dasharray="8,4"/>
-        <path d="M 355,262 Q 335,330 322,393" stroke="#FFC107" stroke-width="2" fill="none" marker-end="url(#arr2)" stroke-dasharray="6,4"/>
-        <path d="M 364,262 Q 550,290 684,355" stroke="#FFC107" stroke-width="2" fill="none" marker-end="url(#arr2)" stroke-dasharray="6,4"/>
-        <rect x="240" y="148" width="90" height="22" rx="4" fill="#1a1a1a99"/>
-        <text x="285" y="163" fill="#FF6B35" font-size="11" text-anchor="middle">≈ 1,000 km</text>
-        <rect x="20" y="420" width="270" height="72" rx="6" fill="#0a1e3599" stroke="#444" stroke-width="1"/>
-        <line x1="32" y1="440" x2="62" y2="440" stroke="#FF6B35" stroke-width="2.5" stroke-dasharray="6,3"/>
-        <polygon points="62,436 72,440 62,444" fill="#FF6B35"/>
-        <text x="78" y="444" fill="#ccc" font-size="12">Evacuation route (Java → Broome)</text>
-        <line x1="32" y1="464" x2="62" y2="464" stroke="#FFC107" stroke-width="2" stroke-dasharray="5,3"/>
-        <polygon points="62,460 72,464 62,468" fill="#FFC107"/>
-        <text x="78" y="468" fill="#ccc" font-size="12">Onward route (Broome → south)</text>
-        <g transform="translate(720,450)">
-          <text x="0" y="-20" fill="#aaa" font-size="13" text-anchor="middle">N</text>
-          <polygon points="0,-16 3,-5 0,-9 -3,-5" fill="#aaa"/>
-          <line x1="0" y1="-16" x2="0" y2="16" stroke="#aaa" stroke-width="1"/>
-          <line x1="-16" y1="0" x2="16" y2="0" stroke="#aaa" stroke-width="1"/>
-          <text x="0" y="27" fill="#aaa" font-size="11" text-anchor="middle">S</text>
-          <text x="22" y="4" fill="#aaa" font-size="11">E</text>
-          <text x="-28" y="4" fill="#aaa" font-size="11">W</text>
-        </g>
-      </svg>
-    </div>
-  </div>
-  <div class="photo-frame">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/RAAF_Short_S.23_Empire_flying_boat.jpg/800px-RAAF_Short_S.23_Empire_flying_boat.jpg" style="width:100%;display:block;" alt="WWII Flying Boat" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-    <div style="display:none;background:#1e1e1e;padding:60px 20px;text-align:center;color:#666;">📷 [Photo: WWII-era flying boats]</div>
-    <div class="photo-caption">Flying boats like these carried refugees across the Timor Sea — up to 57 aircraft a day passed through Broome</div>
-  </div>
-</div>
-
-</div><!-- end text-panel -->
-
-<div class="notes-panel">
-  <h3>📚 Grammar & Vocabulary Notes</h3>
-  <div class="note-item"><span class="note-word">🔵 EN — 英文のみ表示</span><div class="note-explanation">通常の英文テキスト。まず英語で読んで内容を推測しましょう。</div></div>
-  <div class="note-item"><span class="note-word">🟡 JP — 日本語訳を表示</span><div class="note-explanation">英文の直下に日本語訳が表示されます。内容確認に使いましょう。</div></div>
-  <div class="note-item"><span class="note-word">🔴 Color — 文法カラー表示</span><div class="note-explanation">S・V・O・C・副詞・形容詞・前置詞が色分け表示されます。</div></div>
-  <div class="note-item"><span class="note-word">🔴 S = Subject（主語）</span><div class="note-explanation">文の動作主。オレンジ表示。</div></div>
-  <div class="note-item"><span class="note-word">🔵 V = Verb（述語動詞）</span><div class="note-explanation">文の中心となる動作や状態。青で表示。</div></div>
-  <div class="note-item"><span class="note-word">🟡 O = Object（目的語）</span><div class="note-explanation">動詞の直接的な対象。黄で表示。</div></div>
-  <div class="note-item"><span class="note-word">Passive: "was shattered"</span><div class="note-explanation">受動態。「打ち砕かれた」。be + 過去分詞。</div></div>
-  <div class="note-item"><span class="note-word">it seemed (that)...</span><div class="note-explanation">形式主語構文。「〜のように思われた」</div></div>
-  <div class="note-item"><span class="note-word">a matter of time</span><div class="note-explanation">「時間の問題」。起こることは確実な状況。</div></div>
-  <div class="note-item"><span class="note-word">put paid to ~</span><div class="note-explanation">「〜に終止符を打つ」。完全に終わらせる。</div></div>
-  <div class="note-item"><span class="note-word">whatever aircraft could be...</span><div class="note-explanation">複合関係代名詞。「どんな航空機でも〜できる」。</div></div>
-  <div class="note-item"><span class="note-word">made to fly（使役受動）</span><div class="note-explanation">"make + O + 原形"の受動態。「飛ばせられた」。</div></div>
-  <div style="margin-top:20px;padding:15px;background:#1a1a2e;border-radius:8px;border:1px solid #444;">
-    <div style="color:#FF6B35;font-weight:bold;margin-bottom:10px;">🎵 Sound Guide</div>
-    <div style="color:#ccc;font-size:0.88em;line-height:1.7;">
-      <b>🌴 Ambient</b> — Tropical pre-war Broome<br>
-      <b>🥁 War Drums</b> — The advancing Japanese front<br>
-      <b>📻 Radio Static</b> — Allied evacuation orders<br>
-      <b>✈️ Aircraft Engines</b> — 57 planes a day over Broome
-    </div>
-  </div>
-</div>
-
-</div>
-</div>
-
-<footer>
-  <p class="copy">© Sapphire ONLINE Studies English Project &amp; Claude</p>
-  <p class="credit">This learning material is based on the original work by Mervyn W. Prime,<br>
-  <em>"Broome's One Day War"</em> (Perth, WA, January 1992).<br>
-  We warmly encourage readers to explore the full story in the original.</p>
-</footer>
-
-<!-- BGMバー -->
-<div id="bgm-bar">
-  <button class="bgm-btn" id="bgm-play-btn" onclick="startBGM()">▶ BGM スタート</button>
-  <button class="bgm-btn muted" id="bgm-mute-btn" onclick="toggleMute()" style="display:none">🔇 ミュート</button>
-  <span id="bgm-status">🎵 Passacaglia — 準備完了</span>
-  <span id="bgm-timer"></span>
-  <iframe id="yt-player" width="1" height="1"
-    src="about:blank"
-    allow="autoplay"
-    allowfullscreen>
-  </iframe>
-</div>
-
+<div id="main"></div>
 <script>
-// ============================================================
-// 3段モード切替（パラグラフごと）
-// ============================================================
-function setMode(n, mode) {
-  const para = document.getElementById('para' + n);
-  const jp   = document.getElementById('jp' + n);
-  const btns = document.querySelectorAll('#toggle-' + n + ' button');
-
-  // ボタンのアクティブ状態リセット
-  btns.forEach(b => b.className = '');
-  if (mode === 'en')  { btns[0].className = 'active-en';  }
-  if (mode === 'jp')  { btns[1].className = 'active-jp';  }
-  if (mode === 'col') { btns[2].className = 'active-col'; }
-
-  // テキストのカラー切替
-  para.className = 'text-content ' + (mode === 'col' ? 'colored' : 'plain');
-
-  // 日本語訳の表示切替
-  jp.classList.toggle('visible', mode === 'jp');
-}
-
-// ============================================================
-// AudioContext — iOS Safari対応
-// ============================================================
-let actx = null;
-function ensureAudioContext() {
-  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
-  if (actx.state === 'suspended') actx.resume();
-  return actx;
-}
-
-// ============================================================
-// ナレーション音声
-// ============================================================
-const narrationUrls = {
-  1: 'https://dl.dropboxusercontent.com/scl/fi/m576gb01b9dt3zqgeajjy/001.mp3?rlkey=rzjr1glkx7b51t40443la7and&st=qmnzwj9m',
-  2: 'https://dl.dropboxusercontent.com/scl/fi/e92zmviir9h3ec05gb1ur/002.mp3?rlkey=uxrcn6x9j8xrgdxshmxh2vem3&st=bphcssxh',
-  3: 'https://dl.dropboxusercontent.com/scl/fi/c761954u3nmoks9654dm3/003.mp3?rlkey=csozscu1hzvlmakb73qnqtaet&st=qnhxmi2q',
-  4: 'https://dl.dropboxusercontent.com/scl/fi/6ggen8f1v8ztvfu6tywfp/004.mp3?rlkey=n0hhwae0i3rlqkx1w8jipxrru&st=rpvfh1xb'
-};
-const paraToSFX = { 1:'jungle', 2:'march', 3:'radio', 4:'aircraft' };
-
-let curAudio = null, curBtn = null, curPara = null;
-
-function handleNarration(n) {
-  const c   = ensureAudioContext();
-  const btn = document.getElementById('btn-' + n);
-  const st  = document.getElementById('status-' + n);
-
-  if (curPara === n && curAudio && !curAudio.paused) {
-    curAudio.pause(); curAudio.currentTime = 0;
-    btn.classList.remove('playing'); st.textContent = '';
-    stopAllSFX(); curAudio = null; curBtn = null; curPara = null;
-    return;
-  }
-  if (curAudio) {
-    curAudio.pause(); curAudio.currentTime = 0;
-    if (curBtn) curBtn.classList.remove('playing');
-    const ps = document.getElementById('status-' + curPara);
-    if (ps) ps.textContent = '';
-    stopAllSFX();
-  }
-
-  const audio = new Audio();
-  audio.src = narrationUrls[n];
-  curAudio = audio; curBtn = btn; curPara = n;
-  btn.classList.add('playing'); st.textContent = 'Loading…';
-
-
-  audio.oncanplaythrough = () => { st.textContent = 'Playing…'; };
-  audio.onended = () => {
-    btn.classList.remove('playing'); st.textContent = '';
-    curAudio = null; curBtn = null; curPara = null;
-  };
-  audio.onerror = async () => {
-    try {
-      st.textContent = 'Retrying…';
-      const res = await fetch(narrationUrls[n], { mode:'cors' });
-      if (!res.ok) throw new Error();
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a2 = new Audio(blobUrl);
-      curAudio = a2;
-      a2.onplay = () => { playSFX(paraToSFX[n], c); };
-      a2.oncanplaythrough = () => { st.textContent = 'Playing…'; };
-      a2.onended = () => {
-        btn.classList.remove('playing'); st.textContent = '';
-        URL.revokeObjectURL(blobUrl);
-        curAudio = null; curBtn = null; curPara = null;
-      };
-      a2.onerror = () => {
-        btn.classList.remove('playing'); btn.classList.add('error');
-        st.textContent = '⚠ 再生できませんでした';
-        URL.revokeObjectURL(blobUrl);
-        setTimeout(() => { btn.classList.remove('error'); st.textContent = ''; }, 5000);
-        curAudio = null; curBtn = null; curPara = null;
-      };
-      await a2.play();
-    } catch(e) {
-      btn.classList.remove('playing'); btn.classList.add('error');
-      st.textContent = '⚠ 音声ファイルを読み込めません';
-      stopAllSFX();
-      setTimeout(() => { btn.classList.remove('error'); st.textContent = ''; }, 5000);
-      curAudio = null; curBtn = null; curPara = null;
-    }
-  };
-
-  const p = audio.play();
-  if (p) p.catch(err => {
-    btn.classList.remove('playing'); btn.classList.add('error');
-    st.textContent = '⚠ 再生できません';
-    stopAllSFX();
-    setTimeout(() => { btn.classList.remove('error'); st.textContent = ''; }, 5000);
-    curAudio = null; curBtn = null; curPara = null;
-  });
-}
-
-window.addEventListener('beforeunload',()=>{ if(curAudio) curAudio.pause(); });
-
-// ============================================================
-// BGM + ナレーション同期スケジューラー
-// ============================================================
-// 基準: BGM開始(ボタン押下) = YouTube 508秒(8:28)
-// 各ナレーション開始オフセット（秒）
-const BGM_START_SEC = 508;   // YouTube上の開始位置
-const schedule = [
-  { para:1, offset: 17 },   // 8:28+17s = 8:45
-  { para:2, offset: 54 },   // 8:28+54s = 9:22
-  { para:3, offset: 82 },   // 8:28+82s = 9:50
-  { para:4, offset:117 },   // 8:28+117s= 10:25
+const MP3={f1:'6-1.mp3',f2:'6-2.mp3',f3:'6-3.mp3',f4:'6-4.mp3',f5:'6-5.mp3',f6:'6-6.mp3',f7:'6-7.mp3',f8:'6-8.mp3',f9:'6-9.mp3'};
+const POOL=[{"id": "A1", "sec": "A", "sent": 5, "q": "Many of Satoshi's friends attributed his success ____ his hard work and flexible thinking.", "opts": ["to", "for", "of", "with"], "a": "to", "n": "attribute A to B「AをBのおかげとする・AをBに帰する」。be attributed to B の形でも頻出。", "jp": "サトシの友人の多くは、彼の成功を努力と柔軟な思考のおかげだと考えた。", "audio": {"file": "f1", "start": 23.627, "end": 27.784}}, {"id": "A2", "sec": "A", "sent": 7, "q": "The professor confined his lecture ____ how the problem had been handled so far.", "opts": ["to", "on", "in", "at"], "a": "to", "n": "confine A to B「AをBに限定する」。restrict A to B と同義。", "jp": "教授は講義をこれまでの問題の扱われ方に限定した。", "audio": {"file": "f1", "start": 34.644, "end": 38.801}}, {"id": "A3", "sec": "A", "sent": 10, "q": "Many parents forbid their children ____ using their smartphones for a certain number of hours a day.", "opts": ["from", "of", "to", "in"], "a": "from", "n": "forbid A from doing「AがBすることを禁じる」。prohibit A from doing と同義。", "jp": "多くの親は子どもが1日一定時間スマートフォンを使用することを禁じている。", "audio": {"file": "f1", "start": 52.802, "end": 57.85}}, {"id": "A4", "sec": "A", "sent": 13, "q": "We can substitute a group of easier words ____ one difficult word whenever necessary.", "opts": ["for", "to", "with", "of"], "a": "for", "n": "substitute A for B「AをBの代わりに使う」。replace B with A と語順が逆なので注意。", "jp": "必要なときはいつでも、難しい単語の代わりにわかりやすい単語のグループを使える。", "audio": {"file": "f2", "start": 13.925, "end": 18.716}}, {"id": "A5", "sec": "A", "sent": 16, "q": "I hope you will forgive me ____ having kept you waiting for such a long time.", "opts": ["for", "of", "from", "about"], "a": "for", "n": "forgive A for B「BのことでAを許す」。blame A for B と同じ前置詞 for を使う。", "jp": "こんなに長い間お待たせしてしまったことをお許しください。", "audio": {"file": "f2", "start": 33.14, "end": 38.616}}, {"id": "A6", "sec": "A", "sent": 20, "q": "The girl accused her old friend ____ spreading rumors about her.", "opts": ["of", "for", "from", "about"], "a": "of", "n": "accuse A of B「AをBのことで告発・非難する」。suspect A of B と同じ前置詞 of。", "jp": "その少女は旧友が自分の噂を広めていると非難した。", "audio": {"file": "f2", "start": 56.593, "end": 60.357}}, {"id": "A7", "sec": "A", "sent": 26, "q": "We gave a gift to Mary to congratulate her ____ her promotion.", "opts": ["on", "for", "of", "with"], "a": "on", "n": "congratulate A on B「AのBを祝う」。on の後には祝うべき出来事が続く。", "jp": "私たちはメアリーの昇進を祝ってプレゼントを贈った。", "audio": {"file": "f3", "start": 26.148, "end": 29.406}}, {"id": "A8", "sec": "A", "sent": 27, "q": "The newly completed portion of the street was named ____ a well-known poet from the city.", "opts": ["after", "for", "by", "from"], "a": "after", "n": "name A after B「BにちなんでAを名付ける」。after は「〜にちなんで」という意味を表す。", "jp": "新たに完成した通りの部分は、その町出身の著名な詩人にちなんで名付けられた。", "audio": {"file": "f3", "start": 30.906, "end": 35.25}}, {"id": "A9", "sec": "A", "sent": 37, "q": "The hotel which had been closed for some time is said to have changed ____.", "opts": ["hands", "place", "turns", "way"], "a": "hands", "n": "change hands「所有者が変わる・人手に渡る」。固定表現で必ず hands と複数形で使う。", "jp": "しばらく閉鎖されていたそのホテルは、オーナーが変わったと言われている。", "audio": {"file": "f4", "start": 34.101, "end": 38.163}}, {"id": "A10", "sec": "A", "sent": 41, "q": "It is not always easy to keep one's ____.", "opts": ["temper", "pace", "word", "balance"], "a": "temper", "n": "keep one's temper「怒りを抑える・平静を保つ」。lose one's temper「怒る」の反意表現。", "jp": "怒りを抑えることは必ずしも簡単ではない。", "audio": {"file": "f5", "start": 1.0, "end": 3.001}}, {"id": "A11", "sec": "A", "sent": 45, "q": "Do you know why Tom was made fun ____ at school?", "opts": ["of", "at", "by", "for"], "a": "of", "n": "make fun of「〜をからかう・笑い者にする」。受動態でも of は必ず残る。", "jp": "トムがなぜ学校でからかわれていたか知っていますか？", "audio": {"file": "f5", "start": 18.561, "end": 21.006}}, {"id": "A12", "sec": "A", "sent": 52, "q": "We have to keep an eye ____ obesity because it can lead to a range of health problems.", "opts": ["on", "for", "at", "over"], "a": "on", "n": "keep an eye on「〜を注意して見張る・監視する」。watch out for とも言い換えられる。", "jp": "肥満はさまざまな健康問題につながる可能性があるので、注意して見守らなければならない。", "audio": {"file": "f6", "start": 6.614, "end": 11.551}}, {"id": "A13", "sec": "A", "sent": 57, "q": "If you are under the impression that only the students of four-year schools are subject ____ debt, think again.", "opts": ["to", "for", "of", "by"], "a": "to", "n": "be subject to「〜を受けやすい・〜の影響下にある」。subject は「影響を受ける」という形容詞。", "jp": "4年制大学の学生だけが借金を負うと思っているなら考え直してください。", "audio": {"file": "f6", "start": 35.508, "end": 40.719}}, {"id": "A14", "sec": "A", "sent": 63, "q": "From the viewpoint of health, daytime work must be preferable ____ nighttime work.", "opts": ["to", "than", "over", "from"], "a": "to", "n": "be preferable to「〜より好ましい」。prefer A to B と同じく than ではなく to を使う。", "jp": "健康の観点からは、日中の仕事は夜間の仕事より好ましいに違いない。", "audio": {"file": "f7", "start": 12.804, "end": 16.75}}, {"id": "A15", "sec": "A", "sent": 71, "q": "Prof. Smith, who is from the USA, is well versed ____ Japanese literature, especially novels.", "opts": ["in", "at", "on", "with"], "a": "in", "n": "be well versed in「〜に精通している・博識である」。be knowledgeable in と同義。", "jp": "アメリカ出身のスミス教授は、日本文学、特に小説に精通している。", "audio": {"file": "f8", "start": 1.0, "end": 5.706}}, {"id": "B1", "sec": "B", "sent": 8, "q": "Plutarch had a gloomy image of old age, ____ it to autumn.", "a": "likening", "n": "liken A to B「AをBにたとえる」。compare A to B と同義。現在分詞 likening で付帯状況を表す。", "jp": "プルタルコスは老年を暗鬱なイメージで捉え、それを秋にたとえた。", "hint": "liken ___ to", "audio": {"file": "f1", "start": 40.301, "end": 43.864}}, {"id": "B2", "sec": "B", "sent": 9, "q": "When she appeared at the door, I found it hard to keep my voice ____ rising in a happy shout.", "a": "from", "n": "keep A from doing「AがBするのを抑える・妨げる」。prevent A from doing と同義。", "jp": "彼女がドアに現れたとき、嬉しさで声が上ずるのを抑えるのが難しかった。", "hint": "from", "audio": {"file": "f1", "start": 45.364, "end": 51.302}}, {"id": "B3", "sec": "B", "sent": 17, "q": "The incident deprived the couple ____ their happy home life.", "a": "of", "n": "deprive A of B「AからBを奪う」。rob A of B と同義。of が必要。", "jp": "その事件はそのカップルから幸せな家庭生活を奪った。", "hint": "of", "audio": {"file": "f2", "start": 40.116, "end": 43.538}}, {"id": "B4", "sec": "B", "sent": 18, "q": "Worry and stress rob us ____ our youthful energy and vitality.", "a": "of", "n": "rob A of B「AからBを奪う」。deprive A of B と同義。", "jp": "心配やストレスは私たちから若々しいエネルギーと活力を奪う。", "hint": "of", "audio": {"file": "f2", "start": 45.038, "end": 48.802}}, {"id": "B5", "sec": "B", "sent": 23, "q": "We tried hard to talk Saki ____ joining our sports team, but it was in vain.", "a": "into", "n": "talk A into doing「AをBするよう説得する」。persuade A to do と同義。", "jp": "私たちはサキをスポーツチームに加わるよう一生懸命説得しようとしたが、無駄だった。", "hint": "into", "audio": {"file": "f3", "start": 9.973, "end": 14.317}}, {"id": "B6", "sec": "B", "sent": 29, "q": "His family was forced to leave their home to make ____ for the construction of a new road.", "a": "way", "n": "make way for「〜に道を譲る・場所を空ける」。give way to とも言い換えられる。", "jp": "彼の家族は新しい道路の建設のために家を出て場所を空けることを余儀なくされた。", "hint": "way", "audio": {"file": "f3", "start": 41.78, "end": 46.667}}, {"id": "B7", "sec": "B", "sent": 34, "q": "My mother and I took ____ looking after my father when he was in hospital.", "a": "turns", "n": "take turns doing「交互に〜する」。turns は複数形で使う。", "jp": "父が入院しているとき、母と私は交互に父の世話をした。", "hint": "turns", "audio": {"file": "f4", "start": 17.957, "end": 22.019}}, {"id": "B8", "sec": "B", "sent": 43, "q": "The city gradually began to take ____ of the situation after the damage by the flood.", "a": "control", "n": "take control of「〜を制御する・管理下に置く」。take charge of とも言い換えられる。", "jp": "洪水の被害の後、その市は徐々に状況を制御し始めた。", "hint": "control", "audio": {"file": "f5", "start": 9.336, "end": 12.893}}, {"id": "B9", "sec": "B", "sent": 49, "q": "I told the curator that I had a great liking ____ paintings done in the ukiyo-e style.", "a": "for", "n": "have a liking for「〜が好きである・好みがある」。like と同義の名詞表現。", "jp": "私はキュレーターに、浮世絵スタイルの絵画がとても好きだと話した。", "hint": "for", "audio": {"file": "f5", "start": 37.899, "end": 41.678}}, {"id": "B10", "sec": "B", "sent": 53, "q": "I recognized Mary as soon as I caught ____ of her at the airport.", "a": "sight", "n": "catch sight of「〜を見つける・目に入る」。catch a glimpse of とも言い換えられる。", "jp": "空港でメアリーの姿を見つけるとすぐに彼女だとわかった。", "hint": "sight", "audio": {"file": "f6", "start": 13.051, "end": 16.891}}, {"id": "B11", "sec": "B", "sent": 58, "q": "Mr. Kato is superior ____ anyone in the company in his English ability.", "a": "to", "n": "be superior to「〜より優れている」。比較でも than ではなく to を使う。", "jp": "加藤さんは英語力において社内の誰よりも優れている。", "hint": "to", "audio": {"file": "f6", "start": 42.219, "end": 45.785}}, {"id": "B12", "sec": "B", "sent": 76, "q": "They loved each other and were content ____ what little they had.", "a": "with", "n": "be content with「〜に満足している」。be satisfied with と同義。", "jp": "彼らはお互いを愛し、持っているわずかなものに満足していた。", "hint": "with", "audio": {"file": "f8", "start": 31.09, "end": 34.855}}, {"id": "B13", "sec": "B", "sent": 84, "q": "The evidence was not enough to prove that the suspect was guilty ____ the crime.", "a": "of", "n": "be guilty of「〜の罪を犯している・〜について有罪である」。of の後に罪の内容が続く。", "jp": "証拠はその容疑者が犯罪に対して有罪であることを証明するのに十分ではなかった。", "hint": "of", "audio": {"file": "f9", "start": 18.203, "end": 22.966}}, {"id": "B14", "sec": "B", "sent": 86, "q": "To grow up mentally, it's important to learn to be tolerant ____ other views and ideas.", "a": "of", "n": "be tolerant of「〜に寛容である・〜を大目に見る」。tolerate と同義。", "jp": "精神的に成長するためには、他の意見や考えに寛容になることを学ぶことが重要だ。", "hint": "of", "audio": {"file": "f9", "start": 30.094, "end": 35.175}}, {"id": "B15", "sec": "B", "sent": 89, "q": "I am grateful ____ my parents for making me what I am today.", "a": "to", "n": "be grateful to A for B「BのことでAに感謝している」。to の後に感謝する相手が続く。", "jp": "今日の私を作ってくれた両親に感謝している。", "hint": "to", "audio": {"file": "f9", "start": 47.296, "end": 51.424}}, {"id": "C1", "sec": "C", "sent": 1, "q": "部屋に入ると、私は光の変化に目が慣れるまで少しの間立ち止まった。\nOnce in the room, I stood still for a second, ___ my eyes adjust to the change of light.\n（___に適する語を入れよ）", "a": "letting", "alts": ["allowing"], "n": "let A do / allow A to do「AがBするままにしておく」。letting / allowing が正解。", "jp": "Once in the room, I stood still for a second, letting my eyes adjust to the change of light.", "hint": "let / allow", "audio": {"file": "f1", "start": 1.0, "end": 6.641}}, {"id": "C2", "sec": "C", "sent": 11, "q": "博物館の新しい規則は、訪問者が建物内で喫煙することを禁止した。\nThe new rules at the museum ___ visitors from smoking in the building.\n（___に適する語を入れよ）", "a": "prohibited", "alts": ["forbade"], "n": "prohibit A from doing / forbid A from doing「AがBすることを禁じる」。prohibited / forbade が正解。", "jp": "The new rules at the museum prohibited visitors from smoking in the building.", "hint": "prohibit / forbid", "audio": {"file": "f2", "start": 1.0, "end": 5.449}}, {"id": "C3", "sec": "C", "sent": 19, "q": "私はしばらく患っていたひどい風邪から完全に回復した。\nI'm completely ___ of the bad cold I was suffering from for some time.\n（___に適する語を入れよ）", "a": "cured", "n": "be cured of「〜から回復する・〜が治る」。cure は「治す・治る」という意味。", "jp": "I'm completely cured of the bad cold I was suffering from for some time.", "hint": "cured", "audio": {"file": "f2", "start": 50.302, "end": 55.093}}, {"id": "C4", "sec": "C", "sent": 25, "q": "富士山の頂上からの日の出は、私が今まで見た中で最も息をのむ光景として心に迫った。\nThe sunrise from the top of Mt. Fuji ___ me as the most breathtaking scene I'd ever seen.\n（___に適する語を入れよ）", "a": "struck", "n": "strike A as B「AにBという印象を与える」。strike の過去形は struck。", "jp": "The sunrise from the top of Mt. Fuji struck me as the most breathtaking scene I'd ever seen.", "hint": "struck", "audio": {"file": "f3", "start": 19.761, "end": 24.648}}, {"id": "C5", "sec": "C", "sent": 36, "q": "その研究の新しい計画が私の頭の中で形を成し始めた。\nA new plan for the research has begun to take ___ in my mind.\n（___に適する語を入れよ）", "a": "shape", "n": "take shape「形になる・具体化する」。具体的な計画が生まれてくる様子を表す。", "jp": "A new plan for the research has begun to take shape in my mind.", "hint": "shape", "audio": {"file": "f4", "start": 28.81, "end": 32.601}}, {"id": "C6", "sec": "C", "sent": 44, "q": "今日ではより多くの雇用主が労働者にフレックスタイムとテレワークを活用させている。\nToday more employers are letting workers make ___ of flextime and telework.\n（___に適する語を入れよ）", "a": "use", "n": "make use of「〜を活用する・利用する」。take advantage of / utilize と同義。", "jp": "Today more employers are letting workers make use of flextime and telework.", "hint": "use", "audio": {"file": "f5", "start": 14.393, "end": 17.061}}, {"id": "C7", "sec": "C", "sent": 50, "q": "大気質の悪化が多くの根本的な健康問題を引き起こすことが懸念されている。\nIt is feared the worsening air quality will give ___ to many fundamental health problems.\n（___に適する語を入れよ）", "a": "rise", "n": "give rise to「〜を引き起こす・生じさせる」。cause / produce と同義。", "jp": "It is feared the worsening air quality will give rise to many fundamental health problems.", "hint": "rise", "audio": {"file": "f5", "start": 43.178, "end": 46.513}}, {"id": "C8", "sec": "C", "sent": 51, "q": "統計では日本の女性は生涯に2人未満の子供しか産まないことが示されている。\nStatistics show that Japanese women give ___ to fewer than two children in their lifetime.\n（___に適する語を入れよ）", "a": "birth", "n": "give birth to「〜を産む・生み出す」。生命の誕生を表す決まった表現。", "jp": "Statistics show that Japanese women give birth to fewer than two children in their lifetime.", "hint": "birth", "audio": {"file": "f6", "start": 1.0, "end": 5.114}}, {"id": "C9", "sec": "C", "sent": 54, "q": "スミス教授は昨年の英語の授業でスピーキングの練習を重視した。\nProf. Smith put ___ on speaking practice in his English lessons last year.\n（___に適する語を入れよ）", "a": "emphasis", "n": "put emphasis on「〜を重視する・〜に重点を置く」。emphasize と同義。", "jp": "Prof. Smith put emphasis on speaking practice in his English lessons last year.", "hint": "emphasis", "audio": {"file": "f6", "start": 18.391, "end": 21.957}}, {"id": "C10", "sec": "C", "sent": 60, "q": "サムはイギリス人なので、陰鬱な曇り空に慣れていると言っている。\nSam says that because he is an Englishman, he is ___ to dismal, cloudy weather.\n（___に適する語を入れよ）", "a": "accustomed", "n": "be accustomed to「〜に慣れている」。be used to と同義。", "jp": "Sam says that because he is an Englishman, he is accustomed to dismal, cloudy weather.", "hint": "accustomed", "audio": {"file": "f6", "start": 53.448, "end": 57.562}}, {"id": "C11", "sec": "C", "sent": 67, "q": "この提案は数ヶ月前に私たちのグループが出したものとほぼ同一だ。\nThis proposal is almost ___ to the one our group made a couple of months ago.\n（___に適する語を入れよ）", "a": "identical", "n": "be identical to「〜とまったく同一である」。be the same as とほぼ同義。", "jp": "This proposal is almost identical to the one our group made a couple of months ago.", "hint": "identical", "audio": {"file": "f7", "start": 34.589, "end": 39.446}}, {"id": "C12", "sec": "C", "sent": 72, "q": "日本料理でよく使われる海藻はビタミンとミネラルが豊富だ。\nSeaweeds, frequently used in Japanese cooking, are ___ in vitamins and minerals.\n（___に適する語を入れよ）", "a": "abundant", "n": "be abundant in「〜が豊富である」。be rich in と同義。", "jp": "Seaweeds, frequently used in Japanese cooking, are abundant in vitamins and minerals.", "hint": "abundant", "audio": {"file": "f8", "start": 7.206, "end": 10.971}}, {"id": "C13", "sec": "C", "sent": 78, "q": "彼を信頼しなさい。地元の習慣をすべてよく知っているから。\nCount on him; he is ___ with all the local customs.\n（___に適する語を入れよ）", "a": "acquainted", "n": "be acquainted with「〜をよく知っている・〜と知り合いである」。be familiar with と同義。", "jp": "Count on him; he is acquainted with all the local customs.", "hint": "acquainted", "audio": {"file": "f8", "start": 42.248, "end": 45.699}}, {"id": "C14", "sec": "C", "sent": 82, "q": "祖父は来年の試験での私の成功を完全に確信していると言っている。\nMy grandfather says he's fully ___ of my success in the exam next year.\n（___に適する語を入れよ）", "a": "confident", "n": "be confident of「〜を確信している」。be sure of / be certain of と同義。", "jp": "My grandfather says he's fully confident of my success in the exam next year.", "hint": "confident", "audio": {"file": "f9", "start": 6.311, "end": 10.757}}, {"id": "C15", "sec": "C", "sent": 88, "q": "残念ながら、人間の生活に適していると思われる惑星はまだ見つかっていない。\nUnfortunately, no planets which seem to be ___ for human life have yet been found.\n（___に適する語を入れよ）", "a": "suitable", "n": "be suitable for「〜に適している・ふさわしい」。be fit for / be appropriate for と同義。", "jp": "Unfortunately, no planets which seem to be suitable for human life have yet been found.", "hint": "suitable", "audio": {"file": "f9", "start": 41.033, "end": 45.796}}, {"id": "D1", "sec": "D", "sent": 3, "q": "好むと好まざるとにかかわらず、私たちは毎日大量の情報にさらされている。\n→ Whether we like it or ____, we are exposed to large amounts of information every day.", "a": "not", "n": "whether A or not「〜かどうかにかかわらず」。or not が必須。", "jp": "Whether we like it or not, we are exposed to large amounts of information every day.", "hint": "or ___", "audio": {"file": "f1", "start": 13.204, "end": 17.955}}, {"id": "D2", "sec": "D", "sent": 14, "q": "マスメディアはその政治家が人々の声に耳を傾けないと非難した。\n→ The mass media blamed the politician ____ not listening to the voices of the people.", "a": "for", "n": "blame A for B「BのことでAを責める」。for は理由・原因を表す。", "jp": "The mass media blamed the politician for not listening to the voices of the people.", "hint": "for", "audio": {"file": "f2", "start": 20.216, "end": 25.349}}, {"id": "D3", "sec": "D", "sent": 21, "q": "私たちはその少年が故意にクラスメートの本を隠したと疑った。\n→ We suspected the boy ____ having hidden his classmate's book on purpose.", "a": "of", "n": "suspect A of B「AをBで疑う」。accuse A of B と同じ前置詞 of を使う。", "jp": "We suspected the boy of having hidden his classmate's book on purpose.", "hint": "of", "audio": {"file": "f3", "start": 1.0, "end": 4.258}}, {"id": "D4", "sec": "D", "sent": 31, "q": "ずっと昔、私の叔父は周辺地域で海産物を売って生計を立てていた。\n→ A long time ago, my uncle made a ____ selling marine products in the surrounding area.", "a": "living", "n": "make a living「生計を立てる」。make one's living とも言う。", "jp": "A long time ago, my uncle made a living selling marine products in the surrounding area.", "hint": "living", "audio": {"file": "f4", "start": 1.0, "end": 5.333}}, {"id": "D5", "sec": "D", "sent": 35, "q": "私は思い切って来年その大学の入学試験を受けることにする。\n→ I'll take a ____ and take the entrance exam to the university next year.", "a": "chance", "n": "take a chance「思い切ってやってみる・挑戦する」。risk と同義。", "jp": "I'll take a chance and take the entrance exam to the university next year.", "hint": "chance", "audio": {"file": "f4", "start": 23.519, "end": 27.31}}, {"id": "D6", "sec": "D", "sent": 42, "q": "ご滞在中は、ご希望であれば図書館をご利用いただけます。\n→ During your stay here, you can take ____ of a library, if you want to.", "a": "advantage", "n": "take advantage of「〜を利用する・活用する」。make use of と同義。", "jp": "During your stay here, you can take advantage of a library, if you want to.", "hint": "advantage", "audio": {"file": "f5", "start": 4.501, "end": 7.836}}, {"id": "D7", "sec": "D", "sent": 48, "q": "子どもの頃に読んだ物語は、私たちの考え方や行動に強い影響を与えることがある。\n→ The stories we read as children can have a strong ____ on how we think and behave.", "a": "influence", "n": "have a strong influence on「〜に強い影響を与える」。affect / shape と同義。", "jp": "The stories we read as children can have a strong influence on how we think and behave.", "hint": "influence", "audio": {"file": "f5", "start": 32.62, "end": 36.399}}, {"id": "D8", "sec": "D", "sent": 55, "q": "私たちは顔の表情が感情と密接に関連しているという事実を否定できない。\n→ We can't deny the fact that our facial expressions are closely ____ to emotions.", "a": "related", "n": "be related to「〜に関連している」。be connected to / be associated with と同義。", "jp": "We can't deny the fact that our facial expressions are closely related to emotions.", "hint": "related", "audio": {"file": "f6", "start": 23.457, "end": 27.297}}, {"id": "D9", "sec": "D", "sent": 61, "q": "多くの人が思うのとは反対に、自転車は実は電車の後に発明された。\n→ ____ to what most people think, the bicycle was actually invented after the train.", "a": "Contrary", "n": "Contrary to「〜に反して・〜とは逆に」。In contrast to / Unlike とも言い換えられる。", "jp": "Contrary to what most people think, the bicycle was actually invented after the train.", "hint": "Contrary", "audio": {"file": "f7", "start": 1.0, "end": 5.25}}, {"id": "D10", "sec": "D", "sent": 64, "q": "その弁護士はクライアントに献身的なので人気がある。\n→ The lawyer is popular because she is ____ to her clients.", "a": "dedicated", "n": "be dedicated to「〜に献身的である・〜に専念する」。be devoted to と同義。", "jp": "The lawyer is popular because she is dedicated to her clients.", "hint": "dedicated", "audio": {"file": "f7", "start": 18.25, "end": 21.589}}, {"id": "D11", "sec": "D", "sent": 68, "q": "私の父はパワーハラスメントを防止するキャンペーンに長年関わってきた。\n→ My father has long been ____ in a campaign to prevent power harassment.", "a": "involved", "n": "be involved in「〜に関わっている・携わっている」。participate in と同義。", "jp": "My father has long been involved in a campaign to prevent power harassment.", "hint": "involved", "audio": {"file": "f7", "start": 40.946, "end": 44.892}}, {"id": "D12", "sec": "D", "sent": 75, "q": "私たちの客室はすべてエアコン、小型冷蔵庫、無料Wi-Fiを備えている。\n→ All of our rooms are ____ with an air conditioner, a small refrigerator, and free Wi-Fi.", "a": "equipped", "n": "be equipped with「〜を備えている・〜が装備されている」。be furnished with と同義。", "jp": "All of our rooms are equipped with an air conditioner, a small refrigerator, and free Wi-Fi.", "hint": "equipped", "audio": {"file": "f8", "start": 24.57, "end": 29.59}}, {"id": "D13", "sec": "D", "sent": 80, "q": "ユウタはコンテストで1位を取ったが、後になってその賞にふさわしいかどうかと思った。\n→ Yuta got first prize in the contest, but later wondered if he was ____ of the prize.", "a": "worthy", "n": "be worthy of「〜にふさわしい・〜の価値がある」。deserve と同義。", "jp": "Yuta got first prize in the contest, but later wondered if he was worthy of the prize.", "hint": "worthy", "audio": {"file": "f8", "start": 51.523, "end": 56.857}}, {"id": "D14", "sec": "D", "sent": 85, "q": "彼は無罪と裁定された。私たちは最初から彼の無実を確信していた。\n→ He was ruled innocent; we'd been ____ of his innocence from the beginning.", "a": "convinced", "n": "be convinced of「〜を確信している」。be sure of / be certain of と同義。", "jp": "He was ruled innocent; we'd been convinced of his innocence from the beginning.", "hint": "convinced", "audio": {"file": "f9", "start": 24.466, "end": 28.594}}, {"id": "D15", "sec": "D", "sent": 87, "q": "私たちは見知らぬ人からの電話に注意すべきだ。\n→ We should be ____ of telephone calls from strangers.", "a": "wary", "n": "be wary of「〜に用心する・〜に注意する」。be cautious of / be careful of と同義。", "jp": "We should be wary of telephone calls from strangers.", "hint": "wary", "audio": {"file": "f9", "start": 36.675, "end": 39.533}}];
+const GRADES=[
+  {min:20,max:20,emoji:'\ud83c\udfc6',grade:'Perfect!',    color:'#f59e0b',comment:'\u5168\u554f\u6b63\u89e3\uff01\u7d20\u6674\u3089\u3057\u3044\uff01'},
+  {min:18,max:19,emoji:'\ud83c\udf1f',grade:'Excellent!',  color:'#22c55e',comment:'\u305d\u306e\u8abf\u5b50\u3067\u3053\u308c\u304b\u3089\u3082\uff01'},
+  {min:15,max:17,emoji:'\ud83d\udc4f',grade:'Very Good!',  color:'#3b82f6',comment:'\u3088\u304f\u3067\u304d\u307e\u3057\u305f\uff01\u3082\u3046\u5c11\u3057\u3002'},
+  {min:12,max:14,emoji:'\ud83d\udcaa',grade:'Good!',       color:'#60a5fa',comment:'\u826f\u3044\u3067\u3059\uff01\u5f15\u304d\u7d9a\u304d\u7df4\u7fd2\u3002'},
+  {min:9, max:11,emoji:'\ud83d\udcda',grade:'Keep Going!', color:'#a855f7',comment:'\u3082\u3046\u4e00\u606f\uff01\u7e70\u308a\u8fd4\u3057\u3067\u4e0a\u9054\u3002'},
+  {min:0, max:8, emoji:'\ud83d\udca1',grade:'Try Again!',  color:'#ef4444',comment:'\u3053\u308c\u304b\u3089\uff01\u9813\u5f35\u308a\u307e\u3057\u3087\u3046\u3002'},
 ];
-const BGM_END_OFFSET = 197;  // 8:28+197s = 11:45
-
-let bgmStartTime  = null;   // performance.now() 基準
-let bgmTimers     = [];
-let bgmRunning    = false;
-let muted         = false;
-let ytLoaded      = false;
-
-function startBGM() {
-  if (bgmRunning) return;
-  bgmRunning   = true;
-  bgmStartTime = performance.now();
-
-  // YouTubeプレーヤーをロード
-  const yt = document.getElementById('yt-player');
-  yt.src = `https://www.youtube.com/embed/PF-v0MEo2AU?start=${BGM_START_SEC}&autoplay=1&controls=0&mute=0`;
-  ytLoaded = true;
-
-  document.getElementById('bgm-play-btn').style.display = 'none';
-  document.getElementById('bgm-mute-btn').style.display = '';
-  updateStatus('🎵 BGM再生中… しばらくお待ちください');
-
-  // ナレーション自動起動タイマー
-  schedule.forEach(s => {
-    const t = setTimeout(() => {
-      updateStatus(`🔊 パラグラフ ${s.para} ナレーション開始`);
-      handleNarration(s.para);
-    }, s.offset * 1000);
-    bgmTimers.push(t);
-  });
-
-  // 終了フェード（BGMはYouTube側で継続、ステータスのみ更新）
-  const tEnd = setTimeout(() => {
-    updateStatus('🎵 BGM フェードアウト中…');
-    setTimeout(() => {
-      updateStatus('🎵 Passacaglia — 終了');
-      bgmRunning = false;
-      document.getElementById('bgm-play-btn').style.display = '';
-      document.getElementById('bgm-play-btn').textContent = '↺ もう一度';
-      document.getElementById('bgm-mute-btn').style.display = 'none';
-      const yt2 = document.getElementById('yt-player');
-      yt2.src = 'about:blank';
-    }, 4000);
-  }, BGM_END_OFFSET * 1000);
-  bgmTimers.push(tEnd);
-
-  // 経過タイマー表示
-  tickTimer();
+function getGrade(n){return GRADES.find(g=>n>=g.min&&n<=g.max)||GRADES[GRADES.length-1];}
+const ST={qs:[],cur:0,done:false,sc:{A:0,B:0,C:0,D:0},ok:0,ng:0,t0:Date.now()};
+let _qtimer=null,_qsec=30;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+let _ae={};
+function getAud(k){if(!_ae[k])_ae[k]=new Audio(MP3[k]);return _ae[k];}
+let _ca=null;let _ct=null;
+function playClip(f,s,e){
+  if(_ca){_ca.pause();if(_ct){clearTimeout(_ct);_ct=null;}}
+  const a=getAud(f);if(!a)return;
+  a.currentTime=s;a.play();_ca=a;
+  const dur=Math.max(0,(e-s)*1000-50);
+  _ct=setTimeout(()=>{a.pause();_ca=null;_ct=null;},dur);
 }
-
-function tickTimer() {
-  if (!bgmRunning) { document.getElementById('bgm-timer').textContent = ''; return; }
-  const elapsed = (performance.now() - bgmStartTime) / 1000;
-  const ytSec   = BGM_START_SEC + elapsed;
-  const m = Math.floor(ytSec / 60);
-  const s = Math.floor(ytSec % 60).toString().padStart(2,'0');
-  document.getElementById('bgm-timer').textContent = `${m}:${s}`;
-  setTimeout(tickTimer, 500);
+function init(){
+  const p={};['A','B','C','D'].forEach(s=>p[s]=shuffle(POOL.filter(q=>q.sec===s)).slice(0,5));
+  ST.qs=shuffle([...p.A,...p.B,...p.C,...p.D]);
+  ST.cur=0;ST.done=false;ST.sc={A:0,B:0,C:0,D:0};ST.ok=0;ST.ng=0;ST.t0=Date.now();
+  document.getElementById('pf').style.width='0%';updateHdr();render();
 }
+function updateHdr(){
+  const q=ST.qs[ST.cur];
+  ['A','B','C','D'].forEach(s=>{const t=document.getElementById('tab-'+s);t.className='tab '+s+(q&&q.sec===s?' active':'');});
+  document.getElementById('sc-ok').textContent=ST.ok;document.getElementById('sc-ng').textContent=ST.ng;
+  document.getElementById('sc-pos').textContent=(ST.cur<20?ST.cur+1:20)+'/20\u554f';
+  document.getElementById('pf').style.width=(Math.min(ST.cur,20)/20*100)+'%';
+}
+function startQTimer(q){
+  stopQTimer();if(q.sec==='A')return;
+  _qsec=30;updateQTimerUI(30);
+  _qtimer=setInterval(()=>{_qsec--;updateQTimerUI(_qsec);if(_qsec<=0){stopQTimer();if(!ST.done){ST.done=true;ST.ng++;const q2=ST.qs[ST.cur];const i=document.getElementById('ai');if(i){i.disabled=true;i.classList.add('ng');}const sb=document.getElementById('sb');if(sb)sb.disabled=true;showFB(false,q2,true);}}},1000);
+}
+function stopQTimer(){clearInterval(_qtimer);_qtimer=null;}
+function updateQTimerUI(sec){
+  const bar=document.getElementById('qtbar'),num=document.getElementById('qtnum');if(!bar||!num)return;
+  bar.style.width=(sec/30*100)+'%';num.textContent=sec+'s';
+  const c=sec<=5?'danger':sec<=10?'warn':'';
+  bar.className='qtimer-bar'+(c?' '+c:'');num.className='qtimer-num'+(c?' '+c:'');
+}
+const STYPE={
+  A:'4\u62e9 | \u524d\u7f6e\u8a5e\u30fb\u718a\u8a9e\u9078\u629e',
+  B:'\u524d\u7f6e\u8a5e | \u9023\u8a9e\u88dc\u5145',
+  C:'\u718a\u8a9e | \u9069\u8a9e\u88dc\u5145',
+  D:'\u718a\u8a9e | \u548c\u2192\u82f1'
+};
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function eA(s){return String(s).replace(/'/g,'&#39;');}
+function bfy(s){return esc(s).replace(/____/g,'<span class="blank">\u2003\u2003\u2003\u2003\u2003\u2003</span>').replace(/___/g,'<span class="blank">\u2003\u2003\u2003\u2003</span>');}
 
-function toggleMute() {
-  muted = !muted;
-  const btn = document.getElementById('bgm-mute-btn');
-  btn.textContent = muted ? '🔊 ミュート解除' : '🔇 ミュート';
-  btn.classList.toggle('muted', muted);
-  // YouTubeのミュートはiframe再ロードで対応
-  const yt = document.getElementById('yt-player');
-  if (ytLoaded) {
-    const elapsed = Math.floor((performance.now() - bgmStartTime) / 1000);
-    const pos = BGM_START_SEC + elapsed;
-    yt.src = `https://www.youtube.com/embed/PF-v0MEo2AU?start=${pos}&autoplay=1&controls=0&mute=${muted?1:0}`;
+function render(){
+  if(ST.cur>=20){stopQTimer();renderResult();return;}
+  const q=ST.qs[ST.cur];ST.done=false;updateHdr();
+  const au=q.audio;
+  const abtn=`<button class="abtn" onclick="playClip('${au.file}',${au.start},${au.end})"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>\u25b6 \u4f8b\u6587\u3092\u8074\u304f</button>`;
+  let qtxt='';
+
+  if(q.sec==='D'){
+    // D: 日本語行 → 英文空欄
+    const SEP='\n\u2192 ';const idx=q.q.indexOf(SEP);
+    const jpP=idx>=0?q.q.substring(0,idx):q.q;
+    const enP=idx>=0?q.q.substring(idx+SEP.length):'';
+    qtxt=`<div class="qtext-jp">${esc(jpP)}</div><div class="qtext-en">\u2192 ${bfy(enP)}</div>`;
+  } else if(q.sec==='C'){
+    // C: 日本語訳 + 英文空欄 + 指示
+    const lines=q.q.split('\n');
+    // 最後の行が（___に適する語を入れよ）の指示
+    const instLine=lines[lines.length-1];
+    const bodyLines=lines.slice(0,-1);
+    // 最初の行が日本語訳
+    const jpLine=bodyLines[0];
+    const enLines=bodyLines.slice(1);
+    qtxt=`<div class="qtext-jp">${esc(jpLine)}</div>`+
+         `<div class="qtext-en">${enLines.map(l=>bfy(l)).join('<br>')}</div>`+
+         `<div class="qtext-inst">${esc(instLine)}</div>`;
+  } else if(q.sec==='B'){
+    // B: 英文のみ（日本語はガイドで表示）
+    qtxt=`<div class="qtext">${bfy(q.q)}</div>`;
+  } else {
+    // A: 英文のみ
+    qtxt=`<div class="qtext">${bfy(q.q)}</div>`;
+  }
+
+  const guide=(q.sec==='B')?`<div class="qtext-guide">\ud83d\udcdd ${esc(q.jp)}</div>`:'';
+  const timerBar=(q.sec!=='A')?`<div class="qtimer-wrap"><div class="qtimer-bar-bg"><div class="qtimer-bar" id="qtbar" style="width:100%"></div></div><div class="qtimer-num" id="qtnum">30s</div></div>`:'';
+  let inp='';
+  if(q.sec==='A'){
+    const opts=shuffle([...q.opts]);
+    inp=`<div class="choices">${opts.map((o,i)=>`<button class="cbtn" onclick="pick(this,'${eA(o)}')" data-v="${eA(o)}"><span class="lbl">${['\u2460','\u2461','\u2462','\u2463'][i]}</span>${esc(o)}</button>`).join('')}</div>`;
+  } else {
+    const hp=(q.hint&&q.hint.trim())?`<button class="hbtn" id="hbtn" onclick="showHint()">\ud83d\udca1 \u30d2\u30f3\u30c8\u3092\u898b\u308b</button><div class="hbox" id="hbox">\u30d2\u30f3\u30c8: ${esc(q.hint)}</div>`:'';
+    inp=`<div class="iarea">${timerBar}<div class="irow"><input class="tinput" id="ai" placeholder="\u7b54\u3048\u3092\u5165\u529b\u2026" onkeydown="if(event.key==='Enter')sub()"><button class="sbtn" id="sb" onclick="sub()">\u78ba\u8a8d</button></div>${hp}</div>`;
+  }
+  document.getElementById('main').innerHTML=`<div class="qcard"><div class="qmeta"><span class="qnum-badge ${q.sec}">Q${ST.cur+1}/20</span><span class="qtype-lbl">${STYPE[q.sec]}</span></div>${qtxt}${guide}${abtn}${inp}<div class="fb" id="fb"></div><button class="nxtbtn" id="nb" onclick="nxt()">\u6b21\u306e\u554f\u984c \u2192</button></div>`;
+  if(q.sec!=='A'){
+    const i=document.getElementById('ai');if(i)setTimeout(()=>i.focus(),80);
+    if(q.hint&&q.hint.trim()){const h=document.getElementById('hbtn');if(h)h.style.display='block';}
+    setTimeout(()=>startQTimer(q),100);
   }
 }
-
-function updateStatus(msg) {
-  document.getElementById('bgm-status').textContent = msg;
+function showHint(){const b=document.getElementById('hbtn'),h=document.getElementById('hbox');if(b)b.style.display='none';if(h)h.style.display='block';}
+function pick(btn,sel){
+  if(ST.done)return;ST.done=true;const q=ST.qs[ST.cur];
+  document.querySelectorAll('.cbtn').forEach(b=>{b.disabled=true;if(b.dataset.v===q.a)b.classList.add('ok');});
+  const ok=(sel===q.a);btn.classList.remove('ok');btn.classList.add(ok?'ok':'ng');
+  if(ok){ST.sc[q.sec]++;ST.ok++;}else ST.ng++;showFB(ok,q);
 }
+function norm(s){return s.trim().toLowerCase().replace(/[\u3000\s]+/g,' ').replace(/[\uff01-\uff5e]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[.,!?\u3002\u3001\u2026\/]/g,'').trim();}
+function checkAns(input,q){const ni=norm(input);if(ni===norm(q.a))return true;if(q.alts&&q.alts.length&&q.alts.some(alt=>norm(alt)===ni))return true;return false;}
+function sub(){if(ST.done)return;const i=document.getElementById('ai');if(!i||!i.value.trim())return;stopQTimer();ST.done=true;const q=ST.qs[ST.cur];const ok=checkAns(i.value,q);i.disabled=true;i.classList.add(ok?'ok':'ng');const sb=document.getElementById('sb');if(sb)sb.disabled=true;if(ok){ST.sc[q.sec]++;ST.ok++;}else ST.ng++;showFB(ok,q);}
+function showFB(ok,q,timeout=false){
+  if(ok)playClip(q.audio.file,q.audio.start,q.audio.end);
+  const fb=document.getElementById('fb');fb.className='fb '+(ok?'ok':'ng');fb.style.display='block';
+  const mk=ok?'\u2713 \u6b63\u89e3':(timeout?'\u23f0 \u6642\u9593\u5207\u308c':'\u2717 \u4e0d\u6b63\u89e3');
+  const ansDisp=q.alts&&q.alts.length?[q.a,...q.alts].join(' / '):q.a;
+  fb.innerHTML=`<div class="fb-tabs"><div class="fbtab active" id="ft-ans" onclick="fbTab('ans')">\u6b63\u89e3\u3068\u89e3\u8aac</div><div class="fbtab" id="ft-jp" onclick="fbTab('jp')">\u4f8b\u6587\u30fb\u65e5\u672c\u8a9e\u8a33</div></div><div class="fbc show" id="fc-ans"><div class="fb-ans-row">${mk}\u3000\u6b63\u89e3\uff1a<span class="fb-ans">${esc(ansDisp)}</span></div><div class="fb-note">${esc(q.n)}</div></div><div class="fbc" id="fc-jp"><div class="fb-jp">${esc(q.jp)}</div></div>`;
+  document.getElementById('nb').style.display='block';
+  document.getElementById('sc-ok').textContent=ST.ok;document.getElementById('sc-ng').textContent=ST.ng;
+}
+function fbTab(t){['ans','jp'].forEach(x=>{document.getElementById('ft-'+x).classList.toggle('active',x===t);document.getElementById('fc-'+x).classList.toggle('show',x===t);});}
+function nxt(){stopQTimer();ST.cur++;ST.done=false;render();}
+function renderResult(){
+  document.getElementById('pf').style.width='100%';document.getElementById('sc-pos').textContent='\u5b8c\u4e86\uff01';
+  const e=Math.floor((Date.now()-ST.t0)/1000),mm=String(Math.floor(e/60)).padStart(2,'0'),ss=String(e%60).padStart(2,'0');
+  const g=getGrade(ST.ok);
+  document.getElementById('main').innerHTML=
+    `<div class="scard"><div class="s-grade" style="color:${g.color}">${g.emoji} ${g.grade}</div>`+
+    `<div class="s-comment" style="color:${g.color}">${g.comment}</div>`+
+    `<div class="sbig">${ST.ok}</div><div class="slbl">/ 20\u554f\u6b63\u89e3 &nbsp;\u23f1 ${mm}:${ss}</div>`+
+    `<div class="ssecs">`+
+    `<div class="ssec A"><div class="sn">Section A<br>4\u62e9</div><div class="sv">${ST.sc.A}/5</div></div>`+
+    `<div class="ssec B"><div class="sn">Section B<br>\u9023\u8a9e\u88dc\u5145</div><div class="sv">${ST.sc.B}/5</div></div>`+
+    `<div class="ssec C"><div class="sn">Section C<br>\u9069\u8a9e\u88dc\u5145</div><div class="sv">${ST.sc.C}/5</div></div>`+
+    `<div class="ssec D"><div class="sn">Section D<br>\u548c\u2192\u82f1</div><div class="sv">${ST.sc.D}/5</div></div>`+
+    `</div>`+
+    `<button class="rbtn p" onclick="init()">\ud83d\udd00 \u5225\u306e20\u554f\u306b\u6311\u6226</button>`+
+    `<button class="rbtn s" onclick="init()">\u3082\u3046\u4e00\u5ea6</button></div>`;
+}
+setInterval(()=>{if(ST.cur<20){const e=Math.floor((Date.now()-ST.t0)/1000);document.getElementById('tmr').textContent=Math.floor(e/60)+':'+(e%60<10?'0':'')+(e%60);}},1000);
+init();
 </script>
 </body>
 </html>
